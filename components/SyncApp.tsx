@@ -38,6 +38,7 @@ export function SyncApp() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
   const [fromStart, setFromStart] = useState(true);
   const [layout, setLayout] = useState<LayoutMode>(shared?.layout ?? "col");
   const [offset, setOffsetState] = useState(shared?.offset ?? 0);
@@ -61,16 +62,18 @@ export function SyncApp() {
   }, [urlA, urlB]);
 
   const handlePlay = useCallback(() => {
-    if (shared) {
+    if (isViewer && shared) {
       players.playSynced(
         { startA: shared.startA, offset: shared.offset },
         muted,
       );
     } else {
+      // Editor preview: B is already positioned via setOffset/seek, play as-is.
       players.playBoth(muted);
     }
     setIsPlaying(true);
-  }, [players, shared, muted]);
+    setHasPlayed(true);
+  }, [players, shared, muted, isViewer]);
 
   const handlePause = useCallback(() => {
     players.pauseBoth();
@@ -255,7 +258,7 @@ export function SyncApp() {
         </>
       )}
 
-      {isViewer && ready && !isPlaying && (
+      {isViewer && ready && !hasPlayed && (
         <PlayPrompt muted={muted} onPlay={handlePlay} onEdit={handleEdit} />
       )}
     </div>

@@ -6,10 +6,19 @@ import type { MutedSide } from "@/lib/share-state";
 
 const DRIFT_CHECK_MS = 500;
 const DRIFT_TOLERANCE_SEC = 0.3;
+const PLAYER_STATE_PLAYING = 1;
 
 export interface SyncSnapshot {
   startA: number;
   offset: number;
+}
+
+// seekTo() auto-plays a cued/paused player, so restore the paused state when
+// the player was not already playing (prevents unwanted playback on edit/nudge).
+function seekKeepingState(player: YouTubePlayer, seconds: number) {
+  const wasPlaying = player.getPlayerState() === PLAYER_STATE_PLAYING;
+  player.seekTo(Math.max(0, seconds), true);
+  if (!wasPlaying) player.pauseVideo();
 }
 
 /**
@@ -63,7 +72,7 @@ export function useSyncedPlayers() {
     const a = playerARef.current;
     const b = playerBRef.current;
     if (!a || !b) return;
-    b.seekTo(Math.max(0, a.getCurrentTime() + value), true);
+    seekKeepingState(b, a.getCurrentTime() + value);
   }, []);
 
   /** Seeks both players by the same delta, preserving their offset. */
@@ -75,8 +84,8 @@ export function useSyncedPlayers() {
     const timeB = b.getCurrentTime();
     // Clamp so the earlier of the two never goes below 0, keeping offset intact.
     const delta = Math.max(deltaSeconds, -Math.min(timeA, timeB));
-    a.seekTo(timeA + delta, true);
-    b.seekTo(timeB + delta, true);
+    seekKeepingState(a, timeA + delta);
+    seekKeepingState(b, timeB + delta);
   }, []);
 
   const applyMute = useCallback((muted: MutedSide) => {
