@@ -63,14 +63,14 @@ export function Controls({
           className={`${btnBase} bg-white/10 text-white hover:bg-white/20`}
           onClick={onToggleMute}
         >
-          🔈 소리: {muted === "a" ? "아래 영상" : "위 영상"}
+          소리: {muted === "a" ? "아래 영상" : "위 영상"}
         </button>
 
         <button
           className={`${btnBase} bg-white/10 text-white hover:bg-white/20`}
           onClick={onToggleLayout}
         >
-          {layout === "col" ? "⬍ 위아래" : "⬌ 좌우"}
+          {layout === "col" ? "위아래" : "좌우"}
         </button>
 
         {!isViewer && (
@@ -79,7 +79,7 @@ export function Controls({
               className={`${btnBase} bg-sky-500 text-black hover:bg-sky-400`}
               onClick={onCapture}
             >
-              🔗 이 싱크로 URL 만들기
+              이 싱크로 URL 만들기
             </button>
             <label className="flex items-center gap-2 text-sm text-white/70">
               <input
@@ -98,7 +98,7 @@ export function Controls({
             className={`${btnBase} bg-white/10 text-white hover:bg-white/20`}
             onClick={onReset}
           >
-            ✏️ 직접 만들기
+            직접 만들기
           </button>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { extractVideoId } from "@/lib/youtube";
 import {
@@ -13,12 +13,9 @@ import {
 import { useSyncedPlayers } from "@/hooks/useSyncedPlayers";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { PlayerFrame } from "./PlayerFrame";
-import { NudgeControls } from "./NudgeControls";
 import { OffsetControl } from "./OffsetControl";
 import { UrlInputs } from "./UrlInputs";
 import { Controls } from "./Controls";
-
-const OFFSET_POLL_MS = 300;
 
 export function SyncApp() {
   const searchParams = useSearchParams();
@@ -41,20 +38,10 @@ export function SyncApp() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [fromStart, setFromStart] = useState(true);
   const [layout, setLayout] = useState<LayoutMode>(shared?.layout ?? "col");
-  const [selectedSide, setSelectedSide] = useState<MutedSide>("a");
-  const [liveOffset, setLiveOffset] = useState<number | null>(null);
+  const [offset, setOffsetState] = useState(shared?.offset ?? 0);
 
   const ready = Boolean(idA && idB);
   const isEditing = !isViewer && ready;
-
-  // Poll the live offset while editing so the user sees alignment in real time.
-  useEffect(() => {
-    if (!isEditing) return;
-    const timer = setInterval(() => {
-      setLiveOffset(players.getOffset());
-    }, OFFSET_POLL_MS);
-    return () => clearInterval(timer);
-  }, [isEditing, players]);
 
   const handleLoad = useCallback(() => {
     const a = extractVideoId(urlA);
@@ -66,6 +53,7 @@ export function SyncApp() {
     setError(null);
     setShareUrl(null);
     setIsPlaying(false);
+    setOffsetState(0);
     setIdA(a);
     setIdB(b);
   }, [urlA, urlB]);
@@ -82,14 +70,6 @@ export function SyncApp() {
     setIsPlaying(true);
   }, [players, shared, muted]);
 
-  const handleNudge = useCallback(
-    (side: MutedSide, delta: number) => {
-      players.nudge(side, delta);
-      setShareUrl(null);
-    },
-    [players],
-  );
-
   const handlePause = useCallback(() => {
     players.pauseBoth();
     setIsPlaying(false);
@@ -103,13 +83,21 @@ export function SyncApp() {
     }
   }, [isPlaying, handlePause, handlePlay]);
 
+  // Offset is the single source of truth; every adjustment writes state then
+  // repositions B from A. No reading back from the player, so no jitter.
   const handleApplyOffset = useCallback(
     (value: number) => {
-      players.setOffset(value);
-      setLiveOffset(value);
+      const rounded = Math.round(value * 100) / 100;
+      setOffsetState(rounded);
+      players.setOffset(rounded);
       setShareUrl(null);
     },
     [players],
+  );
+
+  const handleNudgeOffset = useCallback(
+    (delta: number) => handleApplyOffset(offset + delta),
+    [handleApplyOffset, offset],
   );
 
   const handleToggleLayout = useCallback(() => {
@@ -123,19 +111,16 @@ export function SyncApp() {
   }, [muted, players]);
 
   const handleCapture = useCallback(() => {
-    const snapshot = players.captureSync();
-    if (!snapshot || !idA || !idB) {
+    if (!idA || !idB) {
       setError("영상을 먼저 불러와 주세요.");
       return;
     }
     // "처음부터 재생"은 정렬을 유지한 채 둘 중 이른 영상을 0초에 맞춘다.
-    const startA = fromStart
-      ? Math.max(0, -snapshot.offset)
-      : snapshot.startA;
+    const startA = fromStart ? Math.max(0, -offset) : players.getStartA();
     const state: ShareState = {
       a: idA,
       b: idB,
-      offset: snapshot.offset,
+      offset,
       startA,
       muted,
       layout,
@@ -144,7 +129,7 @@ export function SyncApp() {
     setShareUrl(`${window.location.origin}/?${query}`);
     setError(null);
     setCopied(false);
-  }, [players, idA, idB, muted, fromStart, layout]);
+  }, [players, idA, idB, muted, fromStart, layout, offset]);
 
   const handleCopy = useCallback(async () => {
     if (!shareUrl) return;
@@ -160,20 +145,17 @@ export function SyncApp() {
     window.location.href = window.location.origin + "/";
   }, []);
 
-  const handleNudgeSelected = useCallback(
-    (delta: number) => handleNudge(selectedSide, delta),
-    [handleNudge, selectedSide],
-  );
-
   useKeyboardShortcuts({
     enabled: isEditing,
-    onNudge: handleNudgeSelected,
+    onNudge: handleNudgeOffset,
     onTogglePlay: handleTogglePlay,
   });
 
   const showInputs = !idA || !idB;
   const playerWrap =
-    layout === "row" ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "flex flex-col gap-4";
+    layout === "row"
+      ? "grid grid-cols-1 sm:grid-cols-2 gap-4"
+      : "flex flex-col gap-4";
 
   return (
     <div
@@ -202,49 +184,31 @@ export function SyncApp() {
       {idA && idB && (
         <>
           <div className={playerWrap}>
-            <div className="flex flex-col gap-2">
-              <PlayerFrame
-                videoId={idA}
-                label="위 영상"
-                audible={muted === "b"}
-                selectable={!isViewer}
-                selected={selectedSide === "a"}
-                onSelect={() => setSelectedSide("a")}
-                onReady={players.registerA}
-              />
-              {!isViewer && (
-                <NudgeControls
-                  label="위 영상"
-                  onNudge={(delta) => handleNudge("a", delta)}
-                />
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <PlayerFrame
-                videoId={idB}
-                label="아래 영상"
-                audible={muted === "a"}
-                selectable={!isViewer}
-                selected={selectedSide === "b"}
-                onSelect={() => setSelectedSide("b")}
-                onReady={players.registerB}
-              />
-              {!isViewer && (
-                <NudgeControls
-                  label="아래 영상"
-                  onNudge={(delta) => handleNudge("b", delta)}
-                />
-              )}
-            </div>
+            <PlayerFrame
+              videoId={idA}
+              label="위 영상"
+              audible={muted === "b"}
+              onReady={players.registerA}
+            />
+            <PlayerFrame
+              videoId={idB}
+              label="아래 영상"
+              audible={muted === "a"}
+              onReady={players.registerB}
+            />
           </div>
 
           {!isViewer && (
             <>
-              <OffsetControl offset={liveOffset} onApply={handleApplyOffset} />
+              <OffsetControl
+                offset={offset}
+                onNudge={handleNudgeOffset}
+                onApply={handleApplyOffset}
+              />
               <p className="text-xs text-white/40">
-                영상을 <strong className="text-white/60">선택</strong>한 뒤
-                키보드 ← → (Shift +1초), Space로 동시 재생. 재생바·미세조정으로
-                싱크를 맞춘 뒤 &ldquo;이 싱크로 URL 만들기&rdquo;를 누르세요.
+                오프셋 버튼·직접 입력으로 싱크를 맞추세요. 키보드 ← → (Shift
+                +1초)로 미세조정, Space로 동시 재생/정지. 맞춘 뒤 &ldquo;이 싱크로
+                URL 만들기&rdquo;를 누르세요.
               </p>
             </>
           )}
