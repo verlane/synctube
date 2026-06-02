@@ -14,6 +14,7 @@ import { useSyncedPlayers } from "@/hooks/useSyncedPlayers";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { PlayerFrame } from "./PlayerFrame";
 import { OffsetControl } from "./OffsetControl";
+import { PlayPrompt } from "./PlayPrompt";
 import { UrlInputs } from "./UrlInputs";
 import { Controls } from "./Controls";
 
@@ -252,6 +253,10 @@ export function SyncApp() {
             onNewStart={handleNewStart}
           />
         </>
+      )}
+
+      {isViewer && ready && !isPlaying && (
+        <PlayPrompt muted={muted} onPlay={handlePlay} onEdit={handleEdit} />
       )}
     </div>
   );
