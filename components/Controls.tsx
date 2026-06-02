@@ -18,7 +18,8 @@ interface ControlsProps {
   onToggleFromStart: (value: boolean) => void;
   onCapture: () => void;
   onCopy: () => void;
-  onReset: () => void;
+  onEdit: () => void;
+  onNewStart: () => void;
 }
 
 const btnBase =
@@ -46,7 +47,8 @@ export function Controls({
   onToggleFromStart,
   onCapture,
   onCopy,
-  onReset,
+  onEdit,
+  onNewStart,
 }: ControlsProps) {
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
@@ -118,11 +120,18 @@ export function Controls({
         {isViewer && (
           <button
             className={`${btnBase} bg-white/10 text-white hover:bg-white/20`}
-            onClick={onReset}
+            onClick={onEdit}
           >
             직접 만들기
           </button>
         )}
+
+        <button
+          className={`${btnBase} bg-white/10 text-white/70 hover:bg-white/20`}
+          onClick={onNewStart}
+        >
+          새로 시작
+        </button>
       </div>
 
       {shareUrl && (

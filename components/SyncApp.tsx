@@ -25,7 +25,8 @@ export function SyncApp() {
     () => parseShareState(searchParams),
     [searchParams],
   );
-  const isViewer = shared !== null;
+  const [forceEdit, setForceEdit] = useState(false);
+  const isViewer = shared !== null && !forceEdit;
 
   const [urlA, setUrlA] = useState("");
   const [urlB, setUrlB] = useState("");
@@ -146,7 +147,16 @@ export function SyncApp() {
     [players],
   );
 
-  const handleReset = useCallback(() => {
+  // Switch a shared link into editing while keeping the videos and sync loaded.
+  const handleEdit = useCallback(() => {
+    players.pauseBoth();
+    setIsPlaying(false);
+    players.setOffset(offset);
+    setForceEdit(true);
+  }, [players, offset]);
+
+  // Full reset to a blank editor (to load different videos).
+  const handleNewStart = useCallback(() => {
     window.location.href = window.location.origin + "/";
   }, []);
 
@@ -238,7 +248,8 @@ export function SyncApp() {
             onToggleFromStart={setFromStart}
             onCapture={handleCapture}
             onCopy={handleCopy}
-            onReset={handleReset}
+            onEdit={handleEdit}
+            onNewStart={handleNewStart}
           />
         </>
       )}
