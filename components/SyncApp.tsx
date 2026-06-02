@@ -33,7 +33,7 @@ export function SyncApp() {
   const [urlB, setUrlB] = useState("");
   const [idA, setIdA] = useState<string | null>(shared?.a ?? null);
   const [idB, setIdB] = useState<string | null>(shared?.b ?? null);
-  const [muted, setMuted] = useState<MutedSide>(shared?.muted ?? "a");
+  const [muted, setMuted] = useState<MutedSide>(shared?.muted ?? "b");
   const [error, setError] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
