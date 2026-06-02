@@ -141,6 +141,11 @@ export function SyncApp() {
     }
   }, [shareUrl]);
 
+  const handleSeekBoth = useCallback(
+    (delta: number) => players.seekBothBy(delta),
+    [players],
+  );
+
   const handleReset = useCallback(() => {
     window.location.href = window.location.origin + "/";
   }, []);
@@ -227,6 +232,7 @@ export function SyncApp() {
             fromStart={fromStart}
             onPlay={handlePlay}
             onPause={handlePause}
+            onSeekBoth={handleSeekBoth}
             onToggleMute={handleToggleMute}
             onToggleLayout={handleToggleLayout}
             onToggleFromStart={setFromStart}

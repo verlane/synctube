@@ -12,6 +12,7 @@ interface ControlsProps {
   fromStart: boolean;
   onPlay: () => void;
   onPause: () => void;
+  onSeekBoth: (delta: number) => void;
   onToggleMute: () => void;
   onToggleLayout: () => void;
   onToggleFromStart: (value: boolean) => void;
@@ -23,6 +24,12 @@ interface ControlsProps {
 const btnBase =
   "rounded-lg px-4 py-2 font-semibold transition disabled:opacity-40";
 
+const SEEK_STEPS = [-10, -5, 5, 10] as const;
+
+function formatSeek(delta: number): string {
+  return `${delta > 0 ? "+" : "−"}${Math.abs(delta)}s`;
+}
+
 export function Controls({
   isViewer,
   isPlaying,
@@ -33,6 +40,7 @@ export function Controls({
   fromStart,
   onPlay,
   onPause,
+  onSeekBoth,
   onToggleMute,
   onToggleLayout,
   onToggleFromStart,
@@ -58,6 +66,20 @@ export function Controls({
             ▶ 동시 재생
           </button>
         )}
+
+        <div className="flex items-center gap-1.5">
+          {SEEK_STEPS.map((delta) => (
+            <button
+              key={delta}
+              type="button"
+              onClick={() => onSeekBoth(delta)}
+              title="두 영상을 동시에 이동"
+              className="rounded-md bg-white/10 px-2.5 py-1.5 text-sm font-semibold text-white transition hover:bg-white/20"
+            >
+              {formatSeek(delta)}
+            </button>
+          ))}
+        </div>
 
         <button
           className={`${btnBase} bg-white/10 text-white hover:bg-white/20`}

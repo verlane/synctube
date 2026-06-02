@@ -45,6 +45,13 @@ export function OffsetControl({ offset, onNudge, onApply }: OffsetControlProps) 
             {formatStep(delta)}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => onApply(0)}
+          className="rounded-md bg-white/10 px-3 py-1.5 text-sm font-semibold text-white/70 transition hover:bg-white/20"
+        >
+          리셋
+        </button>
         <div className="ml-auto flex items-center gap-2">
           <input
             type="number"

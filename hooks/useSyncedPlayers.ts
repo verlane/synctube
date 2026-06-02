@@ -66,6 +66,19 @@ export function useSyncedPlayers() {
     b.seekTo(Math.max(0, a.getCurrentTime() + value), true);
   }, []);
 
+  /** Seeks both players by the same delta, preserving their offset. */
+  const seekBothBy = useCallback((deltaSeconds: number) => {
+    const a = playerARef.current;
+    const b = playerBRef.current;
+    if (!a || !b) return;
+    const timeA = a.getCurrentTime();
+    const timeB = b.getCurrentTime();
+    // Clamp so the earlier of the two never goes below 0, keeping offset intact.
+    const delta = Math.max(deltaSeconds, -Math.min(timeA, timeB));
+    a.seekTo(timeA + delta, true);
+    b.seekTo(timeB + delta, true);
+  }, []);
+
   const applyMute = useCallback((muted: MutedSide) => {
     const a = playerARef.current;
     const b = playerBRef.current;
@@ -118,6 +131,7 @@ export function useSyncedPlayers() {
     registerB,
     getStartA,
     setOffset,
+    seekBothBy,
     playSynced,
     playBoth,
     pauseBoth,
